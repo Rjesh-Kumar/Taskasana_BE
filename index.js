@@ -1,7 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const serverless = require("serverless-http");
 const { initializeDatabase } = require("./db/db.connect");
 const verifyToken = require("./middleware/authMiddleware");
 
@@ -40,5 +39,3 @@ app.get("/", (req, res) => res.send("API running..."));
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-module.exports = app;
-module.exports.handler = serverless(app);
