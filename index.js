@@ -1,6 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const serverless = require("serverless-http");
 const { initializeDatabase } = require("./db/db.connect");
 const verifyToken = require("./middleware/authMiddleware");
 
