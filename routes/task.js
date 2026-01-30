@@ -75,18 +75,13 @@ router.post("/create", verifyToken, async (req, res) => {
   }
 });
 
-// GET ALL TASKS of logged-in user
-router.get("/", verifyToken, async (req, res) => {
+// GET TASKS BY PROJECT
+router.get("/project/:projectId", verifyToken, async (req, res) => {
   try {
-    const tasks = await Task.find({
-      $or: [
-        { createdBy: req.user.id },
-        { owners: req.user.id }
-      ]
-    })
+    const tasks = await Task.find({ project: req.params.projectId })
+      .populate("owners", "name")
       .populate("project", "name")
-      .populate("team", "name")
-      .populate("owners", "name");
+      .populate("team", "name");
 
     res.json(tasks);
   } catch (err) {
@@ -112,21 +107,24 @@ router.get("/:taskId", verifyToken, async (req, res) => {
   }
 });
 
-
-// GET TASKS BY PROJECT
-router.get("/project/:projectId", verifyToken, async (req, res) => {
+// GET ALL TASKS of logged-in user
+router.get("/", verifyToken, async (req, res) => {
   try {
-    const tasks = await Task.find({ project: req.params.projectId })
-      .populate("owners", "name")
+    const tasks = await Task.find({
+      $or: [
+        { createdBy: req.user.id },
+        { owners: req.user.id }
+      ]
+    })
       .populate("project", "name")
-      .populate("team", "name");
+      .populate("team", "name")
+      .populate("owners", "name");
 
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 // UPDATE TASK TAGS
 router.patch("/update/:taskId", verifyToken, async (req, res) => {

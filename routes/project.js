@@ -82,26 +82,6 @@ router.get("/:id", verifyToken, async (req, res) => {
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const project = await Project.findById(req.params.id);
-
-    if (!project) return res.status(404).json({ message: "Project not found" });
-
-    if (project.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Not allowed" });
-    }
-
-    await project.deleteOne();
-    await Task.deleteMany({ project: req.params.id });
-
-    res.json({ message: "Project deleted" });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
-
-
-router.delete("/:id", verifyToken, async (req, res) => {
-  try {
-    const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Project not found" });
 
     await project.deleteOne();
