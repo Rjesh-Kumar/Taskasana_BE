@@ -7,7 +7,6 @@ const verifyToken = require("../middleware/authMiddleware");
 
 /*
   CREATE TASK
-  Only team members can create tasks in a project
 */
 router.post("/create", verifyToken, async (req, res) => {
   try {
@@ -16,41 +15,37 @@ router.post("/create", verifyToken, async (req, res) => {
       description,
       projectId,
       teamId,
-      owners,        // array of user IDs
-      tags,          // array of strings
+      owners = [],
+      tags = [],
       timeToComplete,
-      dueDate
+      dueDate,
+      status = "Todo",       
+      priority = "Medium"     
     } = req.body;
 
-    // Basic validation
-    if (!name || !projectId || !teamId || !owners || !timeToComplete || !dueDate) {
+    if (!name || !projectId || !teamId || !timeToComplete || !dueDate) {
       return res.status(400).json({ message: "Required fields missing" });
     }
 
-    // Check if team exists
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // Check if logged-in user is a team member
     if (!team.members.includes(req.user.id)) {
       return res.status(403).json({ message: "You are not a team member" });
     }
 
-    // Check if project exists and belongs to this team
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: "Project not found" });
     if (project.team.toString() !== teamId) {
       return res.status(400).json({ message: "Project does not belong to this team" });
     }
 
-    // Optional: validate owners are part of team
     for (let ownerId of owners) {
       if (!team.members.includes(ownerId)) {
         return res.status(400).json({ message: "One or more owners are not team members" });
       }
     }
 
-    // Create task
     const task = new Task({
       name,
       description,
@@ -60,6 +55,8 @@ router.post("/create", verifyToken, async (req, res) => {
       tags,
       timeToComplete,
       dueDate,
+      status,      
+      priority,   
       createdBy: req.user.id
     });
 
@@ -75,7 +72,8 @@ router.post("/create", verifyToken, async (req, res) => {
   }
 });
 
-// GET TASKS BY PROJECT
+
+/* GET TASKS BY PROJECT */
 router.get("/project/:projectId", verifyToken, async (req, res) => {
   try {
     const tasks = await Task.find({ project: req.params.projectId })
@@ -89,7 +87,8 @@ router.get("/project/:projectId", verifyToken, async (req, res) => {
   }
 });
 
-// GET SINGLE TASK DETAILS
+
+/* GET SINGLE TASK DETAILS */
 router.get("/:taskId", verifyToken, async (req, res) => {
   try {
     const task = await Task.findById(req.params.taskId)
@@ -97,9 +96,7 @@ router.get("/:taskId", verifyToken, async (req, res) => {
       .populate("team", "name")
       .populate("owners", "name");
 
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
+    if (!task) return res.status(404).json({ message: "Task not found" });
 
     res.json({ task });
   } catch (err) {
@@ -107,14 +104,12 @@ router.get("/:taskId", verifyToken, async (req, res) => {
   }
 });
 
-// GET ALL TASKS of logged-in user
+
+/* GET ALL TASKS OF LOGGED-IN USER */
 router.get("/", verifyToken, async (req, res) => {
   try {
     const tasks = await Task.find({
-      $or: [
-        { createdBy: req.user.id },
-        { owners: req.user.id }
-      ]
+      $or: [{ createdBy: req.user.id }, { owners: req.user.id }]
     })
       .populate("project", "name")
       .populate("team", "name")
@@ -126,18 +121,16 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// UPDATE TASK TAGS
+
+/* UPDATE TASK (STATUS, PRIORITY, TAGS) */
 router.patch("/update/:taskId", verifyToken, async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { tags, status } = req.body;
+    const { tags, status, priority } = req.body; // ✅ priority added
 
     const task = await Task.findById(taskId);
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
-    }
+    if (!task) return res.status(404).json({ message: "Task not found" });
 
-    // Only creator or owner can update
     if (
       task.createdBy.toString() !== req.user.id &&
       !task.owners.includes(req.user.id)
@@ -147,6 +140,7 @@ router.patch("/update/:taskId", verifyToken, async (req, res) => {
 
     if (tags) task.tags = tags;
     if (status) task.status = status;
+    if (priority) task.priority = priority;   // ✅ NEW
 
     await task.save();
 
@@ -154,11 +148,14 @@ router.patch("/update/:taskId", verifyToken, async (req, res) => {
       message: "Task updated successfully",
       task
     });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
+
+/* DELETE TASK */
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
@@ -170,6 +167,5 @@ router.delete("/:id", verifyToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 module.exports = router;
