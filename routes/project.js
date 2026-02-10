@@ -12,25 +12,15 @@ router.post("/create", verifyToken, async (req, res) => {
   try {
     const { name, description, teamId } = req.body;
 
-    if (!name || !teamId) {
-      return res.status(400).json({ message: "Name and teamId are required" });
-    }
-
-    const team = await Team.findById(teamId);
-
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    // Check if logged-in user is part of team
-    if (!team.members.includes(req.user.id)) {
-      return res.status(403).json({ message: "You are not a team member" });
+    if (!name) {
+      return res.status(400).json({ message: "Project name is required" });
     }
 
     const project = new Project({
       name,
       description,
-      team: teamId,
+      team: teamId || null,   // 👈 allow no team
+      owner: req.user.id,
       createdBy: req.user.id
     });
 
@@ -46,21 +36,20 @@ router.post("/create", verifyToken, async (req, res) => {
   }
 });
 
+
 // GET ALL PROJECTS of logged-in user
 router.get("/", verifyToken, async (req, res) => {
   try {
     const projects = await Project.find({
-      $or: [
-        { createdBy: req.user.id },
-        { team: { $in: await getUserTeamIds(req.user.id) } }
-      ]
-    }).populate("team", "name");
+      createdBy: req.user.id
+    });
 
     res.json(projects);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // GET SINGLE PROJECT DETAILS
 router.get("/:id", verifyToken, async (req, res) => {

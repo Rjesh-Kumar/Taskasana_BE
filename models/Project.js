@@ -12,8 +12,7 @@ const projectSchema = new mongoose.Schema({
 
   team: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Team",
-    required: true
+    ref: "Team"
   },
 
    status: {
@@ -21,6 +20,8 @@ const projectSchema = new mongoose.Schema({
     enum: ["To Do", "In-progress", "Completed", "Blocked"],
     default: "To Do"
   },
+  
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
