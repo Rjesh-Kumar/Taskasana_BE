@@ -36,7 +36,7 @@ router.post("/create", verifyToken, async (req, res) => {
 
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: "Project not found" });
-    if (project.team.toString() !== teamId) {
+    if (!project.team || project.team.toString() !== teamId) {
       return res.status(400).json({ message: "Project does not belong to this team" });
     }
 
