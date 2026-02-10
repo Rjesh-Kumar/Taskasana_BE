@@ -6,7 +6,17 @@ const verifyToken = require("../middleware/authMiddleware");
 
 router.get("/test", (req, res) => res.send("TEAM ROUTER WORKS"));
 
-// GET ALL TEAMS OF LOGGED-IN USER
+/* ================= GET ALL REGISTERED USERS (FOR DROPDOWN) ================= */
+router.get("/users/all", verifyToken, async (req, res) => {
+  try {
+    const users = await User.find().select("name email");
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ================= GET ALL TEAMS OF LOGGED-IN USER ================= */
 router.get("/", verifyToken, async (req, res) => {
   try {
     const teams = await Team.find({ members: req.user.id })
@@ -19,7 +29,7 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
-// GET SINGLE TEAM DETAILS
+/* ================= GET SINGLE TEAM DETAILS ================= */
 router.get("/:id", verifyToken, async (req, res) => {
   try {
     const team = await Team.findById(req.params.id)
@@ -34,7 +44,7 @@ router.get("/:id", verifyToken, async (req, res) => {
   }
 });
 
-// CREATE TEAM
+/* ================= CREATE TEAM ================= */
 router.post("/create", verifyToken, async (req, res) => {
   try {
     const { name } = req.body;
@@ -44,7 +54,7 @@ router.post("/create", verifyToken, async (req, res) => {
     const team = new Team({
       name,
       owner: req.user.id,
-      members: [req.user.id]
+      members: [req.user.id],
     });
 
     await team.save();
@@ -54,27 +64,27 @@ router.post("/create", verifyToken, async (req, res) => {
   }
 });
 
-// ADD MEMBER
+/* ================= ADD MEMBER (UPDATED) ================= */
 router.post("/add-member", verifyToken, async (req, res) => {
   try {
-    const { teamId, email } = req.body;
+    const { teamId, userId } = req.body;
 
-    if (!teamId || !email) {
-      return res.status(400).json({ message: "Team ID and email are required" });
+    if (!teamId || !userId) {
+      return res.status(400).json({ message: "Team ID and User ID are required" });
     }
 
     const team = await Team.findById(teamId);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // Only owner can add
+    // Only owner can add members
     if (team.owner.toString() !== req.user.id) {
       return res.status(403).json({ message: "Only owner can add members" });
     }
 
-    // 🔍 Find user by email
-    const user = await User.findOne({ email });
+    // 🔍 Find user by ID
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found. Ask them to register first." });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Already member?
@@ -93,13 +103,12 @@ router.post("/add-member", verifyToken, async (req, res) => {
   }
 });
 
-// DELETE TEAM
+/* ================= DELETE TEAM ================= */
 router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    // only owner can delete
     if (team.owner.toString() !== req.user.id)
       return res.status(403).json({ message: "Only owner can delete team" });
 
@@ -109,6 +118,5 @@ router.delete("/:id", verifyToken, async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 module.exports = router;
