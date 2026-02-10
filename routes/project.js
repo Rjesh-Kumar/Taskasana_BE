@@ -10,16 +10,23 @@ const verifyToken = require("../middleware/authMiddleware");
 */
 router.post("/create", verifyToken, async (req, res) => {
   try {
-    const { name, description, teamId } = req.body;
+    const { name, description, teamId, status } = req.body;
 
+    // 1️⃣ Required field check
     if (!name) {
       return res.status(400).json({ message: "Project name is required" });
     }
 
+    // 2️⃣ Status validation
+    const allowedStatuses = ["To Do", "In-progress", "Completed", "Blocked"];
+    const projectStatus = status && allowedStatuses.includes(status) ? status : "To Do"; 
+    // default to "To Do" if not provided or invalid
+
     const project = new Project({
       name,
       description,
-      team: teamId || null,   // 👈 allow no team
+      status: projectStatus, // ✅ save status
+      team: teamId || null,
       owner: req.user.id,
       createdBy: req.user.id
     });
@@ -30,12 +37,10 @@ router.post("/create", verifyToken, async (req, res) => {
       message: "Project created successfully",
       project
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 // GET ALL PROJECTS of logged-in user
 router.get("/", verifyToken, async (req, res) => {
