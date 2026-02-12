@@ -16,14 +16,7 @@ initializeDatabase();
 
 const app = express();
 
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://taskasana-fe.vercel.app"
-  ],
-  credentials: true
-}));
-
+app.use(cors());
 app.use(express.json());
 
 app.get("/api/protected", verifyToken, (req, res) => {
@@ -43,13 +36,6 @@ console.log("TEAM ROUTE MOUNTED");
 
 app.get("/", (req, res) => res.send("API running..."));
 
-const serverless = require("serverless-http");
-
-if (process.env.NODE_ENV === "production") {
-  module.exports = serverless(app);
-} else {
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-}
-
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
