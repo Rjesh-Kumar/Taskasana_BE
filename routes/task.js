@@ -19,7 +19,7 @@ router.post("/create", verifyToken, async (req, res) => {
       tags = [],
       timeToComplete,
       dueDate,
-      status = "Todo",       
+      status = "To Do",       
       priority = "Medium"     
     } = req.body;
 
@@ -94,7 +94,8 @@ router.get("/:taskId", verifyToken, async (req, res) => {
     const task = await Task.findById(req.params.taskId)
       .populate("project", "name")
       .populate("team", "name")
-      .populate("owners", "name");
+      .populate("owners", "name")
+      .populate("tags", "name");
 
     if (!task) return res.status(404).json({ message: "Task not found" });
 
@@ -104,6 +105,11 @@ router.get("/:taskId", verifyToken, async (req, res) => {
   }
 });
 
+// GET TEAM BY ID WITH MEMBERS
+router.get("/:id", verifyToken, async (req, res) => {
+  const team = await Team.findById(req.params.id).populate("members", "name email");
+  res.json(team);
+});
 
 /* GET ALL TASKS OF LOGGED-IN USER */
 router.get("/", verifyToken, async (req, res) => {
