@@ -38,6 +38,11 @@ app.get("/", (req, res) => res.send("API running..."));
 
 const serverless = require("serverless-http");
 
-module.exports = serverless(app);
+if (process.env.NODE_ENV === "production") {
+  module.exports = serverless(app);
+} else {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
 
