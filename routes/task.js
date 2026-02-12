@@ -137,34 +137,53 @@ router.get("/", verifyToken, async (req, res) => {
 router.patch("/update/:taskId", verifyToken, async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { tags, status, priority } = req.body; // ✅ priority added
 
     const task = await Task.findById(taskId);
     if (!task) return res.status(404).json({ message: "Task not found" });
 
     if (
       task.createdBy.toString() !== req.user.id &&
-      !task.owners.includes(req.user.id)
+      !task.owners.map(o => o.toString()).includes(req.user.id)
     ) {
       return res.status(403).json({ message: "Not allowed to update this task" });
     }
 
-    if (tags) task.tags = tags;
-    if (status) task.status = status;
-    if (priority) task.priority = priority;   // ✅ NEW
+    const {
+      name,
+      description,
+      teamId,
+      owners,
+      tags,
+      status,
+      priority,
+      dueDate,
+      timeToComplete
+    } = req.body;
+
+    // ✅ Update allowed fields
+    if (name !== undefined) task.name = name;
+    if (description !== undefined) task.description = description;
+    if (teamId !== undefined) task.team = teamId;
+    if (owners !== undefined) task.owners = owners;
+    if (tags !== undefined) task.tags = tags;
+    if (status !== undefined) task.status = status;
+    if (priority !== undefined) task.priority = priority;
+    if (dueDate !== undefined) task.dueDate = dueDate;
+    if (timeToComplete !== undefined) task.timeToComplete = timeToComplete;
 
     await task.save();
 
-    res.json({
-      message: "Task updated successfully",
-      task
-    });
+    const updatedTask = await Task.findById(taskId)
+      .populate("owners", "name")
+      .populate("project", "name")
+      .populate("team", "name");
+
+    res.json({ message: "Task updated successfully", task: updatedTask });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 /* DELETE TASK */
 router.delete("/:id", verifyToken, async (req, res) => {
