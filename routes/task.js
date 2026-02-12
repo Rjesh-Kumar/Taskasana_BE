@@ -61,10 +61,15 @@ router.post("/create", verifyToken, async (req, res) => {
     });
 
     await task.save();
+    
+    const populatedTask = await Task.findById(task._id)
+      .populate("owners", "name")
+      .populate("project", "name")
+      .populate("team", "name");
 
     res.status(201).json({
       message: "Task created successfully",
-      task
+      task: populatedTask
     });
 
   } catch (error) {
@@ -106,7 +111,7 @@ router.get("/:taskId", verifyToken, async (req, res) => {
 });
 
 // GET TEAM BY ID WITH MEMBERS
-router.get("/:id", verifyToken, async (req, res) => {
+router.get("/team/:id", verifyToken, async (req, res) => {
   const team = await Team.findById(req.params.id).populate("members", "name email");
   res.json(team);
 });
